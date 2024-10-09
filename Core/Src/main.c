@@ -79,6 +79,8 @@ uint8_t dhcp_buffer[1024];
 uint8_t dns_buffer[200];
 uint8_t ntp_buf[48];
 volatile bool ip_assigned = false;
+uint8_t soc_status;
+uint8_t phy_link_status;
 
 uint8_t ntp_domain_serv[] = "ntp5.stratum1.ru";
 uint8_t ntp_ip_serv[4] = {0};
@@ -266,6 +268,13 @@ int main(void)
     usRegHoldingBuf[5] = HAL_ADC_GetValue(&hadc1);
     modbus_tcps(HTTP_SOCKET, MBTCP_PORT);
 
+    // Ñlose the socket when the cable is disconnected
+    ctlwizchip(CW_GET_PHYLINK, &phy_link_status);
+    getsockopt(HTTP_SOCKET, SO_STATUS, &soc_status);
+    if (soc_status == SOCK_ESTABLISHED && phy_link_status == PHY_LINK_OFF) {
+      close(HTTP_SOCKET);
+      printf("Cable disconnected. Socket closed\r\n");
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
